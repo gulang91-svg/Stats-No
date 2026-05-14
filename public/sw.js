@@ -1,5 +1,5 @@
-const CACHE_NAME = "stats-no-v1";
-const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest"];
+const CACHE_NAME = "stats-no-v2";
+const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest", "./rules.json"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

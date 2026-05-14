@@ -16,6 +16,7 @@ body {
 }
 
 button,
+select,
 textarea {
   font: inherit;
 }
@@ -43,6 +44,10 @@ button {
   border-bottom: 1px solid #d5dadd;
 }
 
+.brand {
+  min-width: 0;
+}
+
 .site-header h1 {
   margin: 0;
   color: #494949;
@@ -58,7 +63,45 @@ button {
   font-size: 18px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.year-picker {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 12px;
+  border: 1px solid #cfd3d7;
+  border-radius: 20px;
+  background: #fff;
+  color: #626a72;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.year-picker span {
+  color: #8a9298;
+  white-space: nowrap;
+}
+
+.year-picker select {
+  min-width: 74px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #4f5961;
+  font-weight: 700;
+}
+
 .top-result,
+.rules-btn,
+.install-btn,
 .result-header button,
 .web-actions button {
   border: 1px solid #cfd3d7;
@@ -66,6 +109,25 @@ button {
   background: #fff;
   color: #59616b;
   font-weight: 700;
+}
+
+.rules-btn,
+.install-btn {
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 20px;
+  font-size: 15px;
+}
+
+.rules-btn {
+  background: #fff;
+  color: #64707a;
+}
+
+.install-btn {
+  border-color: #19b6e7;
+  background: #19b6e7;
+  color: #fff;
 }
 
 .top-result {
@@ -447,6 +509,10 @@ textarea::placeholder {
     min-height: 88px;
   }
 
+  .header-actions {
+    max-width: 280px;
+  }
+
   .site-header h1 {
     font-size: 29px;
     line-height: 34px;
@@ -564,6 +630,8 @@ textarea::placeholder {
   .site-header {
     min-height: 76px;
     padding: 10px 14px;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
   }
 
   .site-header h1 {
@@ -579,6 +647,29 @@ textarea::placeholder {
     min-height: 36px;
     padding: 0 12px;
     font-size: 16px;
+  }
+
+  .header-actions {
+    max-width: 214px;
+    gap: 5px;
+  }
+
+  .year-picker {
+    height: 32px;
+    padding: 0 5px 0 8px;
+    gap: 4px;
+    font-size: 13px;
+  }
+
+  .year-picker select {
+    min-width: 62px;
+  }
+
+  .rules-btn,
+  .install-btn {
+    min-height: 32px;
+    padding: 0 9px;
+    font-size: 13px;
   }
 
   .zodiac-names {
@@ -701,6 +792,20 @@ textarea::placeholder {
     min-height: 34px;
     padding: 0 11px;
     font-size: 15px;
+  }
+
+  .header-actions {
+    max-width: 190px;
+  }
+
+  .year-picker span {
+    display: none;
+  }
+
+  .rules-btn,
+  .install-btn {
+    padding: 0 8px;
+    font-size: 12px;
   }
 
   .zodiac-names {

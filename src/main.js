@@ -1,4 +1,4 @@
-import { computed, createApp, ref } from "vue/dist/vue.esm-bundler.js";
+import { computed, createApp, onMounted, ref, watch } from "vue/dist/vue.esm-bundler.js";
 import "./styles.css";
 
 const pad = (num) => String(num).padStart(2, "0");
@@ -6,70 +6,32 @@ const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from
 const digitSum = (num) => String(num).split("").reduce((sum, n) => sum + Number(n), 0);
 const unique = (items) => Array.from(new Set(items));
 
+const STORAGE_KEYS = {
+  rules: "stats-no-rules",
+  year: "stats-no-year"
+};
+
 const zodiacs = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"];
 
-const zodiacNumbers = {
-  "鼠": [7, 19, 31, 43],
-  "牛": [6, 18, 30, 42],
-  "虎": [5, 17, 29, 41],
-  "兔": [4, 16, 28, 40],
-  "龙": [3, 15, 27, 39],
-  "蛇": [2, 14, 26, 38],
-  "马": [1, 13, 25, 37, 49],
-  "羊": [12, 24, 36, 48],
-  "猴": [11, 23, 35, 47],
-  "鸡": [10, 22, 34, 46],
-  "狗": [9, 21, 33, 45],
-  "猪": [8, 20, 32, 44]
+const fallbackRules = {
+  version: "2026.05.14",
+  defaultYear: "2026",
+  years: {
+    "2026": {
+      elements: {
+        "金": [4, 5, 12, 13, 26, 27, 34, 35, 42, 43],
+        "木": [8, 9, 16, 17, 24, 25, 38, 39, 46, 47],
+        "水": [1, 14, 15, 22, 23, 30, 31, 44, 45],
+        "火": [2, 3, 10, 11, 18, 19, 32, 33, 40, 41, 48, 49],
+        "土": [6, 7, 20, 21, 28, 29, 36, 37]
+      }
+    }
+  }
 };
 
 const redWave = [1, 2, 7, 8, 12, 13, 18, 19, 23, 24, 29, 30, 34, 35, 40, 45, 46];
 const greenWave = [5, 6, 11, 16, 17, 21, 22, 27, 28, 32, 33, 38, 39, 43, 44, 49];
 const blueWave = [3, 4, 9, 10, 14, 15, 20, 25, 26, 31, 36, 37, 41, 42, 47, 48];
-
-const elementNumbers = {
-  "金": [4, 5, 12, 13, 26, 27, 34, 35, 42, 43],
-  "木": [8, 9, 16, 17, 24, 25, 38, 39, 46, 47],
-  "水": [1, 14, 15, 22, 23, 30, 31, 44, 45],
-  "火": [2, 3, 10, 11, 18, 19, 32, 33, 40, 41, 48, 49],
-  "土": [6, 7, 20, 21, 28, 29, 36, 37]
-};
-
-const ruleMap = {};
-for (let i = 1; i <= 49; i += 1) ruleMap[pad(i)] = [i];
-Object.assign(ruleMap, zodiacNumbers, elementNumbers);
-ruleMap["家禽"] = ["牛", "马", "羊", "鸡", "狗", "猪"].flatMap((name) => zodiacNumbers[name]);
-ruleMap["野兽"] = ["鼠", "虎", "兔", "龙", "蛇", "猴"].flatMap((name) => zodiacNumbers[name]);
-ruleMap["单数"] = range(1, 49).filter((n) => n % 2 === 1);
-ruleMap["双数"] = range(1, 49).filter((n) => n % 2 === 0);
-ruleMap["大数"] = range(25, 49);
-ruleMap["小数"] = range(1, 24);
-ruleMap["大单"] = ruleMap["大数"].filter((n) => n % 2 === 1);
-ruleMap["小单"] = ruleMap["小数"].filter((n) => n % 2 === 1);
-ruleMap["大双"] = ruleMap["大数"].filter((n) => n % 2 === 0);
-ruleMap["小双"] = ruleMap["小数"].filter((n) => n % 2 === 0);
-ruleMap["合单"] = range(1, 49).filter((n) => digitSum(n) % 2 === 1);
-ruleMap["合双"] = range(1, 49).filter((n) => digitSum(n) % 2 === 0);
-ruleMap["合大"] = range(1, 49).filter((n) => digitSum(n) >= 7);
-ruleMap["合小"] = range(1, 49).filter((n) => digitSum(n) <= 6);
-ruleMap["红波"] = redWave;
-ruleMap["绿波"] = greenWave;
-ruleMap["蓝波"] = blueWave;
-for (const [label, nums] of Object.entries({ 红: redWave, 绿: greenWave, 蓝: blueWave })) {
-  ruleMap[`${label}单`] = nums.filter((n) => n % 2 === 1);
-  ruleMap[`${label}双`] = nums.filter((n) => n % 2 === 0);
-}
-for (let i = 0; i <= 9; i += 1) ruleMap[`${i}尾`] = range(1, 49).filter((n) => n % 10 === i);
-for (let i = 0; i <= 4; i += 1) ruleMap[`${i}头`] = range(1, 49).filter((n) => Math.floor(n / 10) === i);
-for (let i = 0; i <= 4; i += 1) {
-  ruleMap[`${i}头单`] = ruleMap[`${i}头`].filter((n) => n % 2 === 1);
-  ruleMap[`${i}头双`] = ruleMap[`${i}头`].filter((n) => n % 2 === 0);
-}
-for (let i = 1; i <= 7; i += 1) {
-  const start = (i - 1) * 7 + 1;
-  ruleMap[`${i}段`] = range(start, Math.min(start + 6, 49));
-}
-for (let i = 1; i <= 13; i += 1) ruleMap[`${i}合`] = range(1, 49).filter((n) => digitSum(n) === i);
 
 const aliasMap = {
   "单": "单数",
@@ -83,12 +45,6 @@ const aliasMap = {
   "蓝": "蓝波",
   "兰": "蓝波"
 };
-
-const canonical = (label) => aliasMap[label] || label;
-
-const allLabels = Object.keys(ruleMap)
-  .concat(Object.keys(aliasMap))
-  .sort((a, b) => b.length - a.length);
 
 const tokenGroups = [
   ["鼠", "牛", "虎", "兔", "龙", "蛇"],
@@ -107,6 +63,114 @@ const tokenGroups = [
   ["7合", "8合", "9合", "10合", "11合", "12合"],
   ["13合"]
 ];
+
+const allSelectableLabels = tokenGroups.flat();
+const canonical = (label) => aliasMap[label] || label;
+const safeYear = (value) => (Number.isFinite(Number(value)) ? String(value) : fallbackRules.defaultYear);
+
+function normalizeRules(data) {
+  const source = data && typeof data === "object" ? data : fallbackRules;
+  const years = source.years && typeof source.years === "object" ? source.years : {};
+
+  return {
+    version: String(source.version || fallbackRules.version),
+    defaultYear: safeYear(source.defaultYear || fallbackRules.defaultYear),
+    years: Object.fromEntries(
+      Object.entries(years).map(([year, rule]) => [
+        safeYear(year),
+        {
+          elements: normalizeElements(rule?.elements)
+        }
+      ])
+    )
+  };
+}
+
+function normalizeElements(elements = {}) {
+  return Object.fromEntries(
+    ["金", "木", "水", "火", "土"].map((label) => [
+      label,
+      unique((elements[label] || [])
+        .map(Number)
+        .filter((num) => num >= 1 && num <= 49))
+    ])
+  );
+}
+
+function loadInitialRules() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(STORAGE_KEYS.rules) || "");
+    const normalized = normalizeRules(cached);
+    if (Object.keys(normalized.years).length) return normalized;
+  } catch {
+    // Ignore broken cache and use the bundled rules.
+  }
+
+  return normalizeRules(fallbackRules);
+}
+
+function currentYearZodiacIndex(year) {
+  return ((Number(year) - 2020) % 12 + 12) % 12;
+}
+
+function buildZodiacNumbers(year) {
+  const map = Object.fromEntries(zodiacs.map((name) => [name, []]));
+  const yearIndex = currentYearZodiacIndex(year);
+
+  range(1, 49).forEach((num) => {
+    const zodiacIndex = (yearIndex - ((num - 1) % 12) + 12) % 12;
+    map[zodiacs[zodiacIndex]].push(num);
+  });
+
+  return map;
+}
+
+function buildRuleMap(zodiacNumbers, elementNumbers) {
+  const ruleMap = {};
+  for (let i = 1; i <= 49; i += 1) ruleMap[pad(i)] = [i];
+  Object.assign(ruleMap, zodiacNumbers, elementNumbers);
+
+  ruleMap["家禽"] = ["牛", "马", "羊", "鸡", "狗", "猪"].flatMap((name) => zodiacNumbers[name]);
+  ruleMap["野兽"] = ["鼠", "虎", "兔", "龙", "蛇", "猴"].flatMap((name) => zodiacNumbers[name]);
+  ruleMap["单数"] = range(1, 49).filter((n) => n % 2 === 1);
+  ruleMap["双数"] = range(1, 49).filter((n) => n % 2 === 0);
+  ruleMap["大数"] = range(25, 49);
+  ruleMap["小数"] = range(1, 24);
+  ruleMap["大单"] = ruleMap["大数"].filter((n) => n % 2 === 1);
+  ruleMap["小单"] = ruleMap["小数"].filter((n) => n % 2 === 1);
+  ruleMap["大双"] = ruleMap["大数"].filter((n) => n % 2 === 0);
+  ruleMap["小双"] = ruleMap["小数"].filter((n) => n % 2 === 0);
+  ruleMap["合单"] = range(1, 49).filter((n) => digitSum(n) % 2 === 1);
+  ruleMap["合双"] = range(1, 49).filter((n) => digitSum(n) % 2 === 0);
+  ruleMap["合大"] = range(1, 49).filter((n) => digitSum(n) >= 7);
+  ruleMap["合小"] = range(1, 49).filter((n) => digitSum(n) <= 6);
+  ruleMap["红波"] = redWave;
+  ruleMap["绿波"] = greenWave;
+  ruleMap["蓝波"] = blueWave;
+
+  for (const [label, nums] of Object.entries({ 红: redWave, 绿: greenWave, 蓝: blueWave })) {
+    ruleMap[`${label}单`] = nums.filter((n) => n % 2 === 1);
+    ruleMap[`${label}双`] = nums.filter((n) => n % 2 === 0);
+  }
+
+  for (let i = 0; i <= 9; i += 1) ruleMap[`${i}尾`] = range(1, 49).filter((n) => n % 10 === i);
+  for (let i = 0; i <= 4; i += 1) ruleMap[`${i}头`] = range(1, 49).filter((n) => Math.floor(n / 10) === i);
+  for (let i = 0; i <= 4; i += 1) {
+    ruleMap[`${i}头单`] = ruleMap[`${i}头`].filter((n) => n % 2 === 1);
+    ruleMap[`${i}头双`] = ruleMap[`${i}头`].filter((n) => n % 2 === 0);
+  }
+
+  for (let i = 1; i <= 7; i += 1) {
+    const start = (i - 1) * 7 + 1;
+    ruleMap[`${i}段`] = range(start, Math.min(start + 6, 49));
+  }
+
+  for (let i = 1; i <= 13; i += 1) {
+    ruleMap[`${i}合`] = range(1, 49).filter((n) => digitSum(n) === i);
+  }
+
+  return ruleMap;
+}
 
 const chipTone = (label) => {
   if (zodiacs.includes(label)) return "purple";
@@ -141,14 +205,16 @@ function parseNumberChunk(chunk) {
     const pairNums = pairs.map(Number);
     if (pairNums.every((n) => n >= 1 && n <= 49)) return pairNums.map(pad);
   }
+
   const num = Number(chunk);
   if (num >= 1 && num <= 49) return [pad(num)];
   return [];
 }
 
-function scanLabels(chunk) {
+function scanLabels(chunk, allLabels) {
   const found = [];
   let index = 0;
+
   while (index < chunk.length) {
     const match = allLabels.find((label) => chunk.startsWith(label, index));
     if (match) {
@@ -158,19 +224,24 @@ function scanLabels(chunk) {
       index += 1;
     }
   }
+
   return found;
 }
 
-function parseInput(text) {
+function parseInput(text, ruleMap, allLabels) {
   const normalized = normalizeText(text);
   if (!normalized) return [];
+
   return normalized.split(",").flatMap((chunk) => {
     if (!chunk) return [];
+
     const numbers = parseNumberChunk(chunk);
     if (numbers.length) return numbers;
+
     const label = canonical(chunk);
     if (ruleMap[label]) return [label];
-    return scanLabels(chunk);
+
+    return scanLabels(chunk, allLabels);
   });
 }
 
@@ -192,10 +263,33 @@ function formatGroupedNumbers(numberCounts) {
 }
 
 function App() {
+  const rulesData = ref(loadInitialRules());
+  const selectedYear = ref(localStorage.getItem(STORAGE_KEYS.year) || rulesData.value.defaultYear);
   const selectedLabels = ref(["马", "羊", "牛", "牛", "3尾"]);
   const inputText = ref("马 羊 牛 牛 3尾");
   const view = ref("main");
   const toast = ref("");
+  const canInstall = ref(false);
+  const isInstalled = ref(false);
+  let installPrompt = null;
+
+  const yearOptions = computed(() => {
+    const years = Object.keys(rulesData.value.years || {});
+    return unique([...years, selectedYear.value]).sort((a, b) => Number(b) - Number(a));
+  });
+
+  const zodiacNumbers = computed(() => buildZodiacNumbers(selectedYear.value));
+
+  const elementNumbers = computed(() => {
+    const yearRule = rulesData.value.years?.[selectedYear.value];
+    return normalizeElements(yearRule?.elements || fallbackRules.years[fallbackRules.defaultYear].elements);
+  });
+
+  const ruleMap = computed(() => buildRuleMap(zodiacNumbers.value, elementNumbers.value));
+
+  const allLabels = computed(() => Object.keys(ruleMap.value)
+    .concat(Object.keys(aliasMap))
+    .sort((a, b) => b.length - a.length));
 
   const labelCounts = computed(() => selectedLabels.value.reduce((map, label) => {
     map[label] = (map[label] || 0) + 1;
@@ -211,7 +305,7 @@ function App() {
   const numberCounts = computed(() => {
     const counts = Object.fromEntries(range(1, 49).map((n) => [n, 0]));
     selectedLabels.value.forEach((label) => {
-      const nums = ruleMap[label] || [];
+      const nums = ruleMap.value[label] || [];
       nums.forEach((num) => {
         counts[num] += 1;
       });
@@ -224,6 +318,7 @@ function App() {
   const categoryCard = (title, styles) => {
     const total = selectedLabels.value.filter((item) => styles.includes(item)).length;
     if (total === 0) return null;
+
     return {
       title: `${title}【共${total}次】`,
       lines: groupCounts(selectedLabels.value, styles)
@@ -245,6 +340,14 @@ function App() {
     categoryCard("五行统计结果", ["金", "木", "水", "火", "土"])
   ].filter(Boolean));
 
+  const showToast = (message) => {
+    toast.value = message;
+    window.clearTimeout(showToast.timer);
+    showToast.timer = window.setTimeout(() => {
+      toast.value = "";
+    }, 1500);
+  };
+
   const addLabel = (label) => {
     selectedLabels.value.push(label);
     inputText.value = selectedLabels.value.join(" ");
@@ -257,7 +360,7 @@ function App() {
   };
 
   const updateFromText = () => {
-    selectedLabels.value = parseInput(inputText.value);
+    selectedLabels.value = parseInput(inputText.value, ruleMap.value, allLabels.value);
   };
 
   const clearAll = () => {
@@ -265,53 +368,122 @@ function App() {
     inputText.value = "";
   };
 
+  const invertSelection = () => {
+    const picked = new Set(selectedLabels.value);
+    selectedLabels.value = allSelectableLabels.filter((label) => !picked.has(label));
+    inputText.value = selectedLabels.value.join(" ");
+  };
+
   const statistic = () => {
     updateFromText();
     view.value = "result";
   };
 
-  const showToast = (message) => {
-    toast.value = message;
-    window.clearTimeout(showToast.timer);
-    showToast.timer = window.setTimeout(() => {
-      toast.value = "";
-    }, 1500);
+  const writeClipboard = async (text) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return;
+      } catch {
+        // Fall back below when browser permission blocks clipboard writes.
+      }
+    }
+
+    const helper = document.createElement("textarea");
+    helper.value = text;
+    helper.setAttribute("readonly", "");
+    helper.style.position = "fixed";
+    helper.style.opacity = "0";
+    document.body.appendChild(helper);
+    helper.select();
+    document.execCommand("copy");
+    document.body.removeChild(helper);
   };
 
   const copyText = async (card) => {
-    const text = `${card.title}\n${card.lines.join("\n")}`;
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(text);
-      showToast("复制成功");
-    }
+    await writeClipboard(`${card.title}\n${card.lines.join("\n")}`);
+    showToast("复制成功");
   };
 
   const copyAll = async () => {
     const text = resultCards.value.map((card) => `${card.title}\n${card.lines.join("\n")}`).join("\n\n");
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(text);
-      showToast("复制成功");
+    await writeClipboard(text);
+    showToast("复制成功");
+  };
+
+  const refreshRules = async (silent = false) => {
+    try {
+      const response = await fetch(`${import.meta.env.BASE_URL}rules.json?t=${Date.now()}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("rules request failed");
+
+      const nextRules = normalizeRules(await response.json());
+      if (!Object.keys(nextRules.years).length) throw new Error("empty rules");
+
+      rulesData.value = nextRules;
+      localStorage.setItem(STORAGE_KEYS.rules, JSON.stringify(nextRules));
+      if (!rulesData.value.years[selectedYear.value]) selectedYear.value = nextRules.defaultYear;
+      if (!silent) showToast("规则已更新");
+    } catch {
+      if (!silent) showToast("规则更新失败，已使用本地规则");
     }
   };
 
+  const installApp = async () => {
+    if (!installPrompt) return;
+
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    installPrompt = null;
+    canInstall.value = false;
+  };
+
+  watch(selectedYear, (year) => {
+    localStorage.setItem(STORAGE_KEYS.year, year);
+  });
+
+  onMounted(() => {
+    isInstalled.value = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    refreshRules(true);
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      installPrompt = event;
+      canInstall.value = true;
+    });
+
+    window.addEventListener("appinstalled", () => {
+      installPrompt = null;
+      canInstall.value = false;
+      isInstalled.value = true;
+      showToast("安装成功");
+    });
+  });
+
   return {
     addLabel,
+    canInstall,
     chipTone,
     clearAll,
     copyAll,
     copyText,
     inputText,
+    installApp,
+    invertSelection,
+    isInstalled,
     labelCounts,
     numberCounts,
     pad,
+    refreshRules,
     removeLabel,
     resultCards,
     selectedChips,
+    selectedYear,
     statistic,
     tokenGroups,
     toast,
     updateFromText,
     view,
+    yearOptions,
     zodiacNumbers,
     zodiacs
   };
@@ -322,11 +494,21 @@ createApp({
   template: `
     <div class="page" :class="{ 'show-result': view === 'result' }">
       <header class="site-header">
-        <div>
+        <div class="brand">
           <h1>挑码统计器</h1>
-          <p>2026年</p>
+          <p>{{ selectedYear }}年</p>
         </div>
-        <button class="top-result" type="button" @click="view = 'result'">查看结果</button>
+        <div class="header-actions">
+          <label class="year-picker">
+            <span>年份</span>
+            <select v-model="selectedYear" aria-label="年份">
+              <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
+            </select>
+          </label>
+          <button class="rules-btn" type="button" @click="refreshRules()">更新规则</button>
+          <button v-if="canInstall && !isInstalled" class="install-btn" type="button" @click="installApp">安装</button>
+          <button class="top-result" type="button" @click="view = 'result'">查看结果</button>
+        </div>
       </header>
 
       <main class="layout">
@@ -392,7 +574,7 @@ createApp({
 
         <div class="web-actions" :class="{ hiddenMobile: view === 'result' }">
           <button type="button" @click="clearAll">清空</button>
-          <button type="button">反选</button>
+          <button type="button" @click="invertSelection">反选</button>
           <button type="button" class="primary" @click="statistic">统计</button>
         </div>
 
@@ -405,7 +587,7 @@ createApp({
             <button type="button" @click="view = 'main'">返回</button>
             <div>
               <h2>统计结果</h2>
-              <p>2026年</p>
+              <p>{{ selectedYear }}年</p>
             </div>
             <button type="button" class="danger" @click="copyAll">复制全部</button>
           </header>
