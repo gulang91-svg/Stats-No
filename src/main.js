@@ -6,12 +6,31 @@ const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from
 const digitSum = (num) => String(num).split("").reduce((sum, n) => sum + Number(n), 0);
 const unique = (items) => Array.from(new Set(items));
 
-const STORAGE_KEYS = {
-  rules: "stats-no-rules",
-  year: "stats-no-year"
-};
-
 const zodiacs = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"];
+
+const lunarNewYearDates = {
+  "2020": "2020-01-25",
+  "2021": "2021-02-12",
+  "2022": "2022-02-01",
+  "2023": "2023-01-22",
+  "2024": "2024-02-10",
+  "2025": "2025-01-29",
+  "2026": "2026-02-17",
+  "2027": "2027-02-06",
+  "2028": "2028-01-26",
+  "2029": "2029-02-13",
+  "2030": "2030-02-03",
+  "2031": "2031-01-23",
+  "2032": "2032-02-11",
+  "2033": "2033-01-31",
+  "2034": "2034-02-19",
+  "2035": "2035-02-08",
+  "2036": "2036-01-28",
+  "2037": "2037-02-15",
+  "2038": "2038-02-04",
+  "2039": "2039-01-24",
+  "2040": "2040-02-12"
+};
 
 const nayinElements = [
   "金", "金", "火", "火", "木", "木", "土", "土", "金", "金",
@@ -22,17 +41,14 @@ const nayinElements = [
   "水", "水", "土", "土", "火", "火", "木", "木", "水", "水"
 ];
 
-const fallbackRules = {
-  version: "2026.05.14",
-  defaultYear: "2026",
-  years: {
-    "2026": {}
-  }
-};
-
 const redWave = [1, 2, 7, 8, 12, 13, 18, 19, 23, 24, 29, 30, 34, 35, 40, 45, 46];
 const greenWave = [5, 6, 11, 16, 17, 21, 22, 27, 28, 32, 33, 38, 39, 43, 44, 49];
 const blueWave = [3, 4, 9, 10, 14, 15, 20, 25, 26, 31, 36, 37, 41, 42, 47, 48];
+const waveColorMap = Object.fromEntries([
+  ...redWave.map((num) => [num, "red-wave"]),
+  ...greenWave.map((num) => [num, "green-wave"]),
+  ...blueWave.map((num) => [num, "blue-wave"])
+]);
 
 const aliasMap = {
   "单": "单数",
@@ -71,34 +87,34 @@ const tokenGroups = [
 
 const allSelectableLabels = tokenGroups.flat();
 const canonical = (label) => aliasMap[label] || label;
-const safeYear = (value) => (Number.isFinite(Number(value)) ? String(value) : fallbackRules.defaultYear);
 
-function normalizeRules(data) {
-  const source = data && typeof data === "object" ? data : fallbackRules;
-  const years = source.years && typeof source.years === "object" ? source.years : {};
-
-  return {
-    version: String(source.version || fallbackRules.version),
-    defaultYear: safeYear(source.defaultYear || fallbackRules.defaultYear),
-    years: Object.fromEntries(
-      Object.entries(years).map(([year, rule]) => [
-        safeYear(year),
-        rule && typeof rule === "object" ? rule : {}
-      ])
-    )
-  };
-}
-
-function loadInitialRules() {
+function currentLunarYear(date = new Date()) {
   try {
-    const cached = JSON.parse(localStorage.getItem(STORAGE_KEYS.rules) || "");
-    const normalized = normalizeRules(cached);
-    if (Object.keys(normalized.years).length) return normalized;
+    const parts = new Intl.DateTimeFormat("zh-CN-u-ca-chinese", {
+      timeZone: "Asia/Shanghai",
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    }).formatToParts(date);
+    const relatedYear = parts.find((part) => part.type === "relatedYear")?.value;
+    if (relatedYear) return relatedYear;
   } catch {
-    // Ignore broken cache and use the bundled rules.
+    // Fall back to the bundled Spring Festival table below.
   }
 
-  return normalizeRules(fallbackRules);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const today = `${value.year}-${value.month}-${value.day}`;
+  const gregorianYear = Number(value.year);
+  const newYearDate = lunarNewYearDates[gregorianYear];
+
+  if (newYearDate) return today >= newYearDate ? String(gregorianYear) : String(gregorianYear - 1);
+  return String(gregorianYear);
 }
 
 function currentYearZodiacIndex(year) {
@@ -269,8 +285,7 @@ function formatGroupedNumbers(numberCounts) {
 }
 
 function App() {
-  const rulesData = ref(loadInitialRules());
-  const selectedYear = ref(localStorage.getItem(STORAGE_KEYS.year) || rulesData.value.defaultYear);
+  const selectedYear = ref(currentLunarYear());
   const selectedLabels = ref([]);
   const inputText = ref("");
   const view = ref("main");
@@ -280,12 +295,8 @@ function App() {
   const isInstalled = ref(false);
   let installPrompt = null;
 
-  const yearOptions = computed(() => {
-    const currentYear = new Date().getFullYear();
-    const calculatedYears = range(currentYear - 2, currentYear + 8).map(String);
-    const years = Object.keys(rulesData.value.years || {});
-    return unique([...calculatedYears, ...years, selectedYear.value]).sort((a, b) => Number(b) - Number(a));
-  });
+  const appTitle = computed(() => `${selectedYear.value}年挑码统计器`);
+  const resultTitle = computed(() => `${selectedYear.value}年统计结果`);
 
   const zodiacNumbers = computed(() => buildZodiacNumbers(selectedYear.value));
 
@@ -320,6 +331,18 @@ function App() {
   });
 
   const numberGroups = computed(() => formatGroupedNumbers(numberCounts.value));
+  const maxNumberCount = computed(() => Math.max(0, ...Object.values(numberCounts.value)));
+
+  const shouldHighlightNumber = (num) => {
+    const count = numberCounts.value[num] || 0;
+    return count > 0 && count === maxNumberCount.value;
+  };
+
+  const numberTone = (num) => waveColorMap[num] || "";
+  const numberClasses = (num) => ({
+    active: shouldHighlightNumber(num),
+    [numberTone(num)]: shouldHighlightNumber(num)
+  });
 
   const categoryCard = (title, styles) => {
     const total = selectedLabels.value.filter((item) => styles.includes(item)).length;
@@ -417,23 +440,6 @@ function App() {
     showToast("复制成功");
   };
 
-  const refreshRules = async (silent = false) => {
-    try {
-      const response = await fetch(`${import.meta.env.BASE_URL}rules.json?t=${Date.now()}`, { cache: "no-store" });
-      if (!response.ok) throw new Error("rules request failed");
-
-      const nextRules = normalizeRules(await response.json());
-      if (!Object.keys(nextRules.years).length) throw new Error("empty rules");
-
-      rulesData.value = nextRules;
-      localStorage.setItem(STORAGE_KEYS.rules, JSON.stringify(nextRules));
-      if (!rulesData.value.years[selectedYear.value]) selectedYear.value = nextRules.defaultYear;
-      if (!silent) showToast("规则已更新");
-    } catch {
-      if (!silent) showToast("规则更新失败，已使用本地规则");
-    }
-  };
-
   const installApp = async () => {
     if (!installPrompt) {
       showToast("请点浏览器菜单，选择添加到主屏幕", 3600);
@@ -464,14 +470,13 @@ function App() {
   };
 
   watch(selectedYear, (year) => {
-    localStorage.setItem(STORAGE_KEYS.year, year);
-  });
+    document.title = `${year}年挑码统计器`;
+  }, { immediate: true });
 
   onMounted(() => {
     isInstalled.value = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
     showInstall.value = !isInstalled.value && /Android|iPhone|iPad|iPod|Mobile/i.test(window.navigator.userAgent);
     resizeInstalledWindow();
-    refreshRules(true);
 
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
@@ -496,16 +501,20 @@ function App() {
     clearAll,
     copyAll,
     copyText,
+    appTitle,
     inputText,
     installApp,
     invertSelection,
     isInstalled,
     labelCounts,
+    maxNumberCount,
+    numberClasses,
+    numberTone,
     numberCounts,
     pad,
-    refreshRules,
     removeLabel,
     resultCards,
+    resultTitle,
     selectedChips,
     selectedYear,
     showInstall,
@@ -514,7 +523,6 @@ function App() {
     toast,
     updateFromText,
     view,
-    yearOptions,
     zodiacNumbers,
     zodiacs
   };
@@ -526,17 +534,10 @@ createApp({
     <div class="page" :class="{ 'show-result': view === 'result' }">
       <header class="site-header">
         <div class="brand">
-          <h1>挑码统计器</h1>
-          <p>{{ selectedYear }}年</p>
+          <h1>{{ appTitle }}</h1>
+          <p>农历年份</p>
         </div>
         <div class="header-actions">
-          <label class="year-picker">
-            <span>年份</span>
-            <select v-model="selectedYear" aria-label="年份">
-              <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
-            </select>
-          </label>
-          <button class="rules-btn" type="button" @click="refreshRules()">更新规则</button>
           <button v-if="showInstall && !isInstalled" class="install-btn" type="button" @click="installApp">安装</button>
           <button class="top-result" type="button" @click="view = 'result'">查看结果</button>
         </div>
@@ -553,7 +554,7 @@ createApp({
                 v-for="name in zodiacs"
                 :key="name + row"
                 class="num"
-                :class="{ active: numberCounts[zodiacNumbers[name][row - 1]] }"
+                :class="numberClasses(zodiacNumbers[name][row - 1])"
               >
                 <b>{{ pad(zodiacNumbers[name][row - 1]) }}</b>
                 <small v-if="numberCounts[zodiacNumbers[name][row - 1]]">{{ numberCounts[zodiacNumbers[name][row - 1]] }}次</small>
@@ -565,7 +566,7 @@ createApp({
               <span
                 v-if="zodiacNumbers[name][4]"
                 class="num"
-                :class="{ active: numberCounts[zodiacNumbers[name][4]] }"
+                :class="numberClasses(zodiacNumbers[name][4])"
               >
                 <b>{{ pad(zodiacNumbers[name][4]) }}</b>
                 <small v-if="numberCounts[zodiacNumbers[name][4]]">{{ numberCounts[zodiacNumbers[name][4]] }}次</small>
@@ -623,8 +624,8 @@ createApp({
           <header class="result-header">
             <button type="button" @click="view = 'main'">返回</button>
             <div>
-              <h2>统计结果</h2>
-              <p>{{ selectedYear }}年</p>
+              <h2>{{ resultTitle }}</h2>
+              <p>农历年份</p>
             </div>
             <button type="button" class="danger" @click="copyAll">复制全部</button>
           </header>

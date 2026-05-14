@@ -71,36 +71,7 @@ button {
   flex-wrap: wrap;
 }
 
-.year-picker {
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 8px 0 12px;
-  border: 1px solid #cfd3d7;
-  border-radius: 20px;
-  background: #fff;
-  color: #626a72;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.year-picker span {
-  color: #8a9298;
-  white-space: nowrap;
-}
-
-.year-picker select {
-  min-width: 74px;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #4f5961;
-  font-weight: 700;
-}
-
 .top-result,
-.rules-btn,
 .install-btn,
 .result-header button,
 .web-actions button {
@@ -111,17 +82,11 @@ button {
   font-weight: 700;
 }
 
-.rules-btn,
 .install-btn {
   min-height: 38px;
   padding: 0 13px;
   border-radius: 20px;
   font-size: 15px;
-}
-
-.rules-btn {
-  background: #fff;
-  color: #64707a;
 }
 
 .install-btn {
@@ -223,14 +188,16 @@ button {
   box-shadow: 0 2px 8px rgba(239, 89, 98, .22);
 }
 
-.zodiac-grid .num.active:nth-child(12n + 2),
-.zodiac-grid .num.active:nth-child(12n + 8) {
-  background: #64c530;
+.num.active.red-wave {
+  background: #ef5962;
 }
 
-.zodiac-grid .num.active:nth-child(12n + 1),
-.zodiac-grid .num.active:nth-child(12n + 11) {
+.num.active.blue-wave {
   background: #36a9df;
+}
+
+.num.active.green-wave {
+  background: #64c530;
 }
 
 .last-num-row {
@@ -661,18 +628,6 @@ textarea::placeholder {
     gap: 5px;
   }
 
-  .year-picker {
-    height: 32px;
-    padding: 0 5px 0 8px;
-    gap: 4px;
-    font-size: 13px;
-  }
-
-  .year-picker select {
-    min-width: 62px;
-  }
-
-  .rules-btn,
   .install-btn {
     min-height: 32px;
     padding: 0 9px;
@@ -805,11 +760,6 @@ textarea::placeholder {
     max-width: 190px;
   }
 
-  .year-picker span {
-    display: none;
-  }
-
-  .rules-btn,
   .install-btn {
     padding: 0 8px;
     font-size: 12px;

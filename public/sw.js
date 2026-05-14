@@ -1,5 +1,5 @@
-const CACHE_NAME = "stats-no-v3";
-const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest", "./rules.json"];
+const CACHE_NAME = "stats-no-v4";
+const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -25,7 +25,6 @@ self.addEventListener("fetch", (event) => {
   const shouldRefresh =
     isPage ||
     url.pathname.includes("/assets/") ||
-    url.pathname.endsWith("/rules.json") ||
     url.pathname.endsWith("/manifest.webmanifest") ||
     url.pathname.endsWith("/sw.js");
 
