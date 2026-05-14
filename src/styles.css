@@ -236,6 +236,13 @@ button {
 .last-num-row {
   height: 50px;
   display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: center;
+}
+
+.last-num-cell {
+  min-width: 0;
+  display: grid;
   place-items: center;
 }
 

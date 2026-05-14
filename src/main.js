@@ -265,11 +265,12 @@ function formatGroupedNumbers(numberCounts) {
 function App() {
   const rulesData = ref(loadInitialRules());
   const selectedYear = ref(localStorage.getItem(STORAGE_KEYS.year) || rulesData.value.defaultYear);
-  const selectedLabels = ref(["马", "羊", "牛", "牛", "3尾"]);
-  const inputText = ref("马 羊 牛 牛 3尾");
+  const selectedLabels = ref([]);
+  const inputText = ref("");
   const view = ref("main");
   const toast = ref("");
   const canInstall = ref(false);
+  const showInstall = ref(false);
   const isInstalled = ref(false);
   let installPrompt = null;
 
@@ -340,12 +341,12 @@ function App() {
     categoryCard("五行统计结果", ["金", "木", "水", "火", "土"])
   ].filter(Boolean));
 
-  const showToast = (message) => {
+  const showToast = (message, duration = 1500) => {
     toast.value = message;
     window.clearTimeout(showToast.timer);
     showToast.timer = window.setTimeout(() => {
       toast.value = "";
-    }, 1500);
+    }, duration);
   };
 
   const addLabel = (label) => {
@@ -429,12 +430,32 @@ function App() {
   };
 
   const installApp = async () => {
-    if (!installPrompt) return;
+    if (!installPrompt) {
+      showToast("请点浏览器菜单，选择添加到主屏幕", 3600);
+      return;
+    }
 
     installPrompt.prompt();
     await installPrompt.userChoice;
     installPrompt = null;
     canInstall.value = false;
+  };
+
+  const resizeInstalledWindow = () => {
+    const standalone = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    if (!standalone || window.innerWidth >= 1020 || window.screen.width < 900) return;
+
+    const width = Math.min(1180, window.screen.availWidth || 1180);
+    const height = Math.min(860, window.screen.availHeight || 860);
+    const left = Math.max(0, Math.round(((window.screen.availWidth || width) - width) / 2));
+    const top = Math.max(0, Math.round(((window.screen.availHeight || height) - height) / 2));
+
+    try {
+      window.resizeTo(width, height);
+      window.moveTo(left, top);
+    } catch {
+      // Some browsers block window sizing; the app still remains responsive.
+    }
   };
 
   watch(selectedYear, (year) => {
@@ -443,17 +464,21 @@ function App() {
 
   onMounted(() => {
     isInstalled.value = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    showInstall.value = !isInstalled.value && /Android|iPhone|iPad|iPod|Mobile/i.test(window.navigator.userAgent);
+    resizeInstalledWindow();
     refreshRules(true);
 
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
       installPrompt = event;
       canInstall.value = true;
+      showInstall.value = true;
     });
 
     window.addEventListener("appinstalled", () => {
       installPrompt = null;
       canInstall.value = false;
+      showInstall.value = false;
       isInstalled.value = true;
       showToast("安装成功");
     });
@@ -478,6 +503,7 @@ function App() {
     resultCards,
     selectedChips,
     selectedYear,
+    showInstall,
     statistic,
     tokenGroups,
     toast,
@@ -506,7 +532,7 @@ createApp({
             </select>
           </label>
           <button class="rules-btn" type="button" @click="refreshRules()">更新规则</button>
-          <button v-if="canInstall && !isInstalled" class="install-btn" type="button" @click="installApp">安装</button>
+          <button v-if="showInstall && !isInstalled" class="install-btn" type="button" @click="installApp">安装</button>
           <button class="top-result" type="button" @click="view = 'result'">查看结果</button>
         </div>
       </header>
@@ -530,9 +556,15 @@ createApp({
             </template>
           </div>
           <div class="last-num-row">
-            <span class="num" :class="{ active: numberCounts[49] }">
-              <b>49</b>
-              <small v-if="numberCounts[49]">{{ numberCounts[49] }}次</small>
+            <span v-for="name in zodiacs" :key="name + '-last'" class="last-num-cell">
+              <span
+                v-if="zodiacNumbers[name][4]"
+                class="num"
+                :class="{ active: numberCounts[zodiacNumbers[name][4]] }"
+              >
+                <b>{{ pad(zodiacNumbers[name][4]) }}</b>
+                <small v-if="numberCounts[zodiacNumbers[name][4]]">{{ numberCounts[zodiacNumbers[name][4]] }}次</small>
+              </span>
             </span>
           </div>
         </section>
