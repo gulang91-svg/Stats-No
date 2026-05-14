@@ -13,19 +13,20 @@ const STORAGE_KEYS = {
 
 const zodiacs = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"];
 
+const nayinElements = [
+  "金", "金", "火", "火", "木", "木", "土", "土", "金", "金",
+  "火", "火", "水", "水", "土", "土", "金", "金", "木", "木",
+  "水", "水", "土", "土", "火", "火", "木", "木", "水", "水",
+  "金", "金", "火", "火", "木", "木", "土", "土", "金", "金",
+  "火", "火", "水", "水", "土", "土", "金", "金", "木", "木",
+  "水", "水", "土", "土", "火", "火", "木", "木", "水", "水"
+];
+
 const fallbackRules = {
   version: "2026.05.14",
   defaultYear: "2026",
   years: {
-    "2026": {
-      elements: {
-        "金": [4, 5, 12, 13, 26, 27, 34, 35, 42, 43],
-        "木": [8, 9, 16, 17, 24, 25, 38, 39, 46, 47],
-        "水": [1, 14, 15, 22, 23, 30, 31, 44, 45],
-        "火": [2, 3, 10, 11, 18, 19, 32, 33, 40, 41, 48, 49],
-        "土": [6, 7, 20, 21, 28, 29, 36, 37]
-      }
-    }
+    "2026": {}
   }
 };
 
@@ -43,7 +44,11 @@ const aliasMap = {
   "红": "红波",
   "绿": "绿波",
   "蓝": "蓝波",
-  "兰": "蓝波"
+  "兰": "蓝波",
+  "龍": "龙",
+  "馬": "马",
+  "雞": "鸡",
+  "豬": "猪"
 };
 
 const tokenGroups = [
@@ -78,23 +83,10 @@ function normalizeRules(data) {
     years: Object.fromEntries(
       Object.entries(years).map(([year, rule]) => [
         safeYear(year),
-        {
-          elements: normalizeElements(rule?.elements)
-        }
+        rule && typeof rule === "object" ? rule : {}
       ])
     )
   };
-}
-
-function normalizeElements(elements = {}) {
-  return Object.fromEntries(
-    ["金", "木", "水", "火", "土"].map((label) => [
-      label,
-      unique((elements[label] || [])
-        .map(Number)
-        .filter((num) => num >= 1 && num <= 49))
-    ])
-  );
 }
 
 function loadInitialRules() {
@@ -123,6 +115,20 @@ function buildZodiacNumbers(year) {
   });
 
   return map;
+}
+
+function nayinElementForYear(year) {
+  const index = ((Number(year) - 1984) % 60 + 60) % 60;
+  return nayinElements[index];
+}
+
+function buildElementNumbers(year) {
+  const result = { "金": [], "木": [], "水": [], "火": [], "土": [] };
+  range(1, 49).forEach((num) => {
+    const element = nayinElementForYear(Number(year) - num + 1);
+    result[element].push(num);
+  });
+  return result;
 }
 
 function buildRuleMap(zodiacNumbers, elementNumbers) {
@@ -275,16 +281,15 @@ function App() {
   let installPrompt = null;
 
   const yearOptions = computed(() => {
+    const currentYear = new Date().getFullYear();
+    const calculatedYears = range(currentYear - 2, currentYear + 8).map(String);
     const years = Object.keys(rulesData.value.years || {});
-    return unique([...years, selectedYear.value]).sort((a, b) => Number(b) - Number(a));
+    return unique([...calculatedYears, ...years, selectedYear.value]).sort((a, b) => Number(b) - Number(a));
   });
 
   const zodiacNumbers = computed(() => buildZodiacNumbers(selectedYear.value));
 
-  const elementNumbers = computed(() => {
-    const yearRule = rulesData.value.years?.[selectedYear.value];
-    return normalizeElements(yearRule?.elements || fallbackRules.years[fallbackRules.defaultYear].elements);
-  });
+  const elementNumbers = computed(() => buildElementNumbers(selectedYear.value));
 
   const ruleMap = computed(() => buildRuleMap(zodiacNumbers.value, elementNumbers.value));
 
