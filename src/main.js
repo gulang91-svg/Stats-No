@@ -377,15 +377,23 @@ function App() {
     }, duration);
   };
 
-  const addLabel = (label) => {
-    selectedLabels.value.push(label);
+  const syncInputText = () => {
     inputText.value = selectedLabels.value.join(" ");
+  };
+
+  const addLabel = (label) => {
+    if (selectedLabels.value.includes(label)) {
+      selectedLabels.value = selectedLabels.value.filter((item) => item !== label);
+    } else {
+      selectedLabels.value.push(label);
+    }
+    syncInputText();
   };
 
   const removeLabel = (label) => {
     const index = selectedLabels.value.indexOf(label);
     if (index >= 0) selectedLabels.value.splice(index, 1);
-    inputText.value = selectedLabels.value.join(" ");
+    syncInputText();
   };
 
   const updateFromText = () => {
@@ -394,13 +402,13 @@ function App() {
 
   const clearAll = () => {
     selectedLabels.value = [];
-    inputText.value = "";
+    syncInputText();
   };
 
   const invertSelection = () => {
     const picked = new Set(selectedLabels.value);
     selectedLabels.value = allSelectableLabels.filter((label) => !picked.has(label));
-    inputText.value = selectedLabels.value.join(" ");
+    syncInputText();
   };
 
   const statistic = () => {
