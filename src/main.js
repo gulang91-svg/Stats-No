@@ -422,6 +422,22 @@ function App() {
     view.value = "result";
   };
 
+  const pasteFromClipboard = async () => {
+    if (!navigator.clipboard?.readText || !window.isSecureContext) {
+      showToast("请长按输入框粘贴", 2400);
+      return;
+    }
+
+    try {
+      const text = await navigator.clipboard.readText();
+      inputText.value = text;
+      updateFromText();
+      showToast("已黏贴并更新");
+    } catch {
+      showToast("请允许读取剪贴板", 2400);
+    }
+  };
+
   const writeClipboard = async (text) => {
     if (navigator.clipboard && window.isSecureContext) {
       try {
@@ -526,6 +542,7 @@ function App() {
     numberTone,
     numberCounts,
     pad,
+    pasteFromClipboard,
     removeLabel,
     resultCards,
     resultTitle,
@@ -606,7 +623,10 @@ createApp({
               placeholder="您可以通过文字输入需要统计的内容（例如：01,02,单数,家禽）&#10;支持各种标点、空格、换行、连续中文，例如：金木水火土"
             ></textarea>
           </div>
-          <button class="update-btn" type="button" @click="updateFromText">更新</button>
+          <div class="input-actions">
+            <button class="paste-btn" type="button" @click="pasteFromClipboard">黏贴</button>
+            <button class="update-btn" type="button" @click="updateFromText">更新</button>
+          </div>
         </section>
 
         <section class="chips" :class="{ hiddenMobile: view === 'result' }">

@@ -261,15 +261,30 @@ textarea::placeholder {
   color: #aaaeb2;
 }
 
-.update-btn {
+.input-actions {
   align-self: start;
-  height: 70px;
+  display: grid;
+  gap: 10px;
+}
+
+.paste-btn,
+.update-btn {
   border: 0;
   border-radius: 8px;
-  background: #a9dff4;
   color: #fff;
-  font-size: 28px;
   font-weight: 700;
+}
+
+.paste-btn {
+  height: 52px;
+  background: #78c9a7;
+  font-size: 22px;
+}
+
+.update-btn {
+  height: 70px;
+  background: #a9dff4;
+  font-size: 28px;
 }
 
 .chips {
@@ -689,6 +704,15 @@ textarea::placeholder {
     line-height: 25px;
   }
 
+  .input-actions {
+    gap: 8px;
+  }
+
+  .paste-btn {
+    height: 42px;
+    font-size: 18px;
+  }
+
   .update-btn {
     height: 52px;
     font-size: 20px;
@@ -807,6 +831,15 @@ textarea::placeholder {
     min-height: 70px;
     font-size: 15px;
     line-height: 23px;
+  }
+
+  .input-actions {
+    gap: 7px;
+  }
+
+  .paste-btn {
+    height: 38px;
+    font-size: 17px;
   }
 
   .update-btn {
