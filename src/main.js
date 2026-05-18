@@ -211,9 +211,15 @@ const chipTone = (label) => {
   return "purple";
 };
 
-function normalizeText(text) {
+function stripCountNotes(text) {
   return text
-    .normalize("NFKC")
+    .replace(/[【\[]\s*(?:共\s*)?\d+\s*次\s*[】\]]/g, " ")
+    .replace(/[【\[]\s*(?:共\s*)?\d+\s*个\s*[】\]]/g, " ")
+    .replace(/\(\s*(?:共\s*)?\d+\s*(?:个|次)?\s*\)/g, " ");
+}
+
+function normalizeText(text) {
+  return stripCountNotes(text.normalize("NFKC"))
     .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .replace(/[^\p{Script=Han}\d]+/gu, ",")
     .replace(/,+/g, ",")
